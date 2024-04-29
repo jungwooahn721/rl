@@ -147,8 +147,7 @@ class MLPPolicyPG(MLPPolicy):
         # HINT: ratio is the exponential of the difference between logp and old_logp.
         # HINT: You can use torch.clamp to clip values.
         
-        dist = self(obs)
-        logp = dist.log_prob(actions)
+        logp = self(obs).log_prob(actions)
         
         ratio = torch.exp(logp - old_logp)
         
