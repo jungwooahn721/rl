@@ -170,14 +170,16 @@ class PGAgent(nn.Module):
 
         if self.critic is None:
             # TODO: if no baseline, then what are the advantages?
-            advantages = None
+            advantages = q_values
         else:
             # TODO: run the critic and use it as a baseline
-            values = None
+            obs = ptu.from_numpy(obs)
+            values = self.critic(obs).squeeze()
 
             if self.gae_lambda is None:
                 # TODO: if using a baseline, but not GAE, what are the advantages?
-                advantages = None
+                rewards_to_go = self._discounted_reward_to_go(rewards)
+                advantages = rewards_to_go - values
             else:
                 # TODO: implement GAE
                 batch_size = obs.shape[0]
@@ -224,7 +226,12 @@ class PGAgent(nn.Module):
         """
         assert rewards.ndim == 1
         # TODO: calculate discounted return using the above formula
-        ret = None
+        ret = np.zeros_like(rewards)
+    
+        len_ret = rewards.shape[0]
+        
+        for t in range(len_ret):
+            ret[t] = sum([(self.gamma ** t_prime) * rewards[t_prime] for t_prime in range(len_ret)])  # -1 ?
 
         assert rewards.shape == ret.shape
         return ret
@@ -249,7 +256,13 @@ class PGAgent(nn.Module):
         """
         assert rewards.ndim == 1
         # TODO: calculate discounted reward to go using the above formula
-        ret = None
+        
+        ret = np.zeros_like(rewards)
+    
+        len_ret = rewards.shape[0]
+        
+        for t in range(len_ret):
+            ret[t] = sum([(self.gamma ** (t_prime - t)) * rewards[t_prime] for t_prime in range(t, len_ret)])
 
         assert rewards.shape == ret.shape
         return ret
@@ -266,7 +279,10 @@ class PGAgent(nn.Module):
         assert obs.ndim == 2
         # TODO: calculate the log probabilities
         # HINT: self.actor outputs a distribution object, which has a method log_prob that takes in the actions
-        logp = None
+        obs = ptu.from_numpy(obs)
+        actions = ptu.from_numpy(actions)
+        logp = self(obs).log_prob(actions)
 
         assert logp.ndim == 1 and logp.shape[0] == obs.shape[0]
+        
         return logp

@@ -30,18 +30,18 @@ def sample_trajectory(
             )
 
         assert ob.ndim == 1
-        # TODO use the most recent ob and the policy to decide what to do
-        ac: np.ndarray = None
+        #a TODO use the most recent ob and the policy to decide what to do
+        ac: np.ndarray = policy.get_action(ob)
 
         # check if output action matches the action space
         assert ac.shape == env.action_space.shape
 
-        # TODO: use that action to take a step in the environment
-        next_ob, rew, done, _ = None, None, None, None
+        #a TODO: use that action to take a step in the environment
+        next_ob, rew, done, _ = env.step(ac)
 
-        # TODO rollout can end due to done, or due to max_length
+        #a TODO rollout can end due to done, or due to max_length
         steps += 1
-        rollout_done: bool = None
+        rollout_done: bool = int(done or steps >= max_path_length)
 
         # record result of taking that action
         obs.append(ob)

@@ -56,7 +56,10 @@ class MLPPolicy(nn.Module):
     def get_action(self, obs: np.ndarray) -> np.ndarray:
         """Takes a single observation (as a numpy array) and returns a single action (as a numpy array)."""
         # TODO: implement get_action
-        action = None
+        obs = ptu.from_numpy(obs)
+        dist = self(obs)
+        
+        action = ptu.to_numpy(dist.sample())
 
         return action
 
@@ -69,12 +72,14 @@ class MLPPolicy(nn.Module):
         if self.discrete:
             # TODO: define the forward pass for a policy with a discrete action space.
             # HINT: use torch.distributions.Categorical to define the distribution.
-            dist = None
+            logits = self.logits_net(obs)
+            dist = distributions.Categorical(logits)
         else:
             # TODO: define the forward pass for a policy with a continuous action space.
             # HINT: use torch.distributions.Normal to define the distribution.
-            dist = None
-
+            mean = self.mean_net(obs)
+            std = torch.diag(torch.exp(self.logstd))
+            dist = distributions.Normal(mean, std)
         return dist
 
     def update(self, obs: np.ndarray, actions: np.ndarray, *args, **kwargs) -> dict:
@@ -102,7 +107,18 @@ class MLPPolicyPG(MLPPolicy):
 
         # TODO: implement the policy gradient actor update.
         # HINT: don't forget to do `self.optimizer.step()`!
-        loss = None
+        
+        self.optimizer.zero_grad()
+        
+        dist = self(obs)
+        logp = dist.log_prob(actions)
+        advantages = ptu.from_numpy(advantages)
+        
+        loss = - (logp * advantages).sum()
+        
+        loss.backward()
+        
+        self.optimizer.step()
 
         return {
             "Actor Loss": ptu.to_numpy(loss),
@@ -131,6 +147,12 @@ class MLPPolicyPG(MLPPolicy):
         # HINT: calculate logp first, and then caculate ratio and clipped loss.
         # HINT: ratio is the exponential of the difference between logp and old_logp.
         # HINT: You can use torch.clamp to clip values.
-        loss = None
+        
+        dist = self(obs)
+        logp = dist.log_prob(actions)
+        
+        ratio = torch.exp(logp - old_logp)
+        
+        loss = torch.min(ratio * advantages, torch.clamp(ratio, 1 - ppo_cliprange, 1 + ppo_cliprange) * advantages)
 
         return {"PPO Loss": ptu.to_numpy(loss)}
