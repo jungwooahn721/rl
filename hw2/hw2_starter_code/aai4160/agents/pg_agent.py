@@ -90,7 +90,7 @@ class PGAgent(nn.Module):
 
         # step 2: calculate advantages from Q values
         assert q_values.ndim == 1
-        advantages: np.ndarray = self.estimate_advantage(obs, rewards, q_values, terminals)
+        advantages: np.ndarray = self._estimate_advantage(obs, rewards, q_values, terminals)
 
         assert advantages.ndim == 1
         # step 3: use all datapoints (s_t, a_t, adv_t) to update the PG actor/policy
@@ -100,11 +100,11 @@ class PGAgent(nn.Module):
                 advantages = (advantages - np.mean(advantages)) / (np.std(advantages) + 1e-8) # eps=1e-8 for numerical stability
             
             # TODO: update the PG actor/policy network once using the advantages
-            info: dict = {"Actor Loss": self.actor.update(obs, actions, advantages)}
+            info: dict = self.actor.update(obs, actions, advantages)
 
             if self.critic is not None:
                 # TODO: update the critic for `baseline_gradient_steps` times
-                critic_info: dict = {"Baseline Loss": self.critic.update(obs, q_values)}
+                critic_info: dict = self.critic.update(obs, q_values)
                     
                 info.update(critic_info)
         else:
@@ -134,11 +134,11 @@ class PGAgent(nn.Module):
 
                     # TODO: update the PG actor/policy with PPO objective
                     # HINT: call self.actor.ppo_update
-                    info: dict = {"PPO Loss": self.actor.ppo_update(obs_slice, actions_slice, advantages_slice, logp_slice, self.ppo_cliprange)}
+                    info: dict = self.actor.ppo_update(obs_slice, actions_slice, advantages_slice, logp_slice, self.ppo_cliprange)
 
             assert self.critic is not None, "PPO requires a critic for calculating GAE."
             # TODO: update the critic for `baseline_gradient_steps` times
-            critic_info: dict = {"Baseline Loss": self.critic.update(obs, q_values)}
+            critic_info: dict = self.critic.update(obs, q_values)
 
             info.update(critic_info)
         return info
@@ -180,7 +180,8 @@ class PGAgent(nn.Module):
         else:
             # TODO: run the critic and use it as a baseline
             obs = ptu.from_numpy(obs)
-            values = self.critic(obs).squeeze()
+            values = ptu.to_numpy(self.critic(obs).squeeze())
+            
 
             if self.gae_lambda is None:
                 # TODO: if using a baseline, but not GAE, what are the advantages?
@@ -294,8 +295,10 @@ class PGAgent(nn.Module):
         # HINT: self.actor outputs a distribution object, which has a method log_prob that takes in the actions
         obs = ptu.from_numpy(obs)
         actions = ptu.from_numpy(actions)
-        logp = self(obs).log_prob(actions)
+        logp = self.actor(obs).log_prob(actions)
+        
 
         assert logp.ndim == 1 and logp.shape[0] == obs.shape[0]
         
+        logp = ptu.to_numpy(logp) #a
         return logp

@@ -73,13 +73,13 @@ class MLPPolicy(nn.Module):
             # TODO: define the forward pass for a policy with a discrete action space.
             # HINT: use torch.distributions.Categorical to define the distribution.
             logits = self.logits_net(obs)
-            dist = distributions.Categorical(logits)
+            dist = distributions.Categorical(F.softmax(logits))
         else:
             # TODO: define the forward pass for a policy with a continuous action space.
             # HINT: use torch.distributions.Normal to define the distribution.
             mean = self.mean_net(obs)
             std = torch.diag(torch.exp(self.logstd))
-            dist = distributions.Normal(mean, std)
+            dist = distributions.MultivariateNormal(mean, std)
         return dist
 
     def update(self, obs: np.ndarray, actions: np.ndarray, *args, **kwargs) -> dict:
@@ -112,7 +112,6 @@ class MLPPolicyPG(MLPPolicy):
         
         dist = self(obs)
         logp = dist.log_prob(actions)
-        advantages = ptu.from_numpy(advantages)
         
         loss = - (logp * advantages).sum()
         
@@ -153,6 +152,6 @@ class MLPPolicyPG(MLPPolicy):
         
         ratio = torch.exp(logp - old_logp)
         
-        loss = torch.min(ratio * advantages, torch.clamp(ratio, 1 - ppo_cliprange, 1 + ppo_cliprange) * advantages)
+        loss = (torch.min(ratio * advantages, torch.clamp(ratio, 1 - ppo_cliprange, 1 + ppo_cliprange) * advantages)).sum()
 
         return {"PPO Loss": ptu.to_numpy(loss)}

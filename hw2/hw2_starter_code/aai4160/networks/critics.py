@@ -48,8 +48,7 @@ class ValueCritic(nn.Module):
         # TODO: update the critic using the observations and q_values
         
         q_values_pred = self(obs).squeeze()
-        
-        loss = nn.MSELoss(q_values_pred, q_values)
+        loss = torch.mean((q_values_pred - q_values) ** 2)
 
         return {
             "Baseline Loss": ptu.to_numpy(loss),
