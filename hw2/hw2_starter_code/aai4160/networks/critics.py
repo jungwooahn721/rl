@@ -46,9 +46,13 @@ class ValueCritic(nn.Module):
         assert q_values.ndim == 1
 
         # TODO: update the critic using the observations and q_values
+        self.optimizer.zero_grad()
         
         q_values_pred = self(obs).squeeze()
-        loss = torch.mean((q_values_pred - q_values) ** 2)
+        loss = F.mse_loss(q_values_pred, q_values)
+        
+        loss.backward()
+        self.optimizer.step()
 
         return {
             "Baseline Loss": ptu.to_numpy(loss),

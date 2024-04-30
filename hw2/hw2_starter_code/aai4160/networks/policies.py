@@ -78,8 +78,8 @@ class MLPPolicy(nn.Module):
             # TODO: define the forward pass for a policy with a continuous action space.
             # HINT: use torch.distributions.Normal to define the distribution.
             mean = self.mean_net(obs)
-            std = torch.diag(torch.exp(self.logstd))
-            dist = distributions.MultivariateNormal(mean, std)
+            std = torch.exp(self.logstd)
+            dist = distributions.Normal(mean, std)
         return dist
 
     def update(self, obs: np.ndarray, actions: np.ndarray, *args, **kwargs) -> dict:
@@ -111,12 +111,15 @@ class MLPPolicyPG(MLPPolicy):
         self.optimizer.zero_grad()
         
         dist = self(obs)
-        logp = dist.log_prob(actions)
         
-        loss = - (logp * advantages).sum()
+        if self.discrete:
+            logp = dist.log_prob(actions)
+        else:
+            logp = dist.log_prob(actions).sum(dim=-1)
+        
+        loss = - torch.mean(logp * advantages)
         
         loss.backward()
-        
         self.optimizer.step()
 
         return {
@@ -146,11 +149,18 @@ class MLPPolicyPG(MLPPolicy):
         # HINT: calculate logp first, and then caculate ratio and clipped loss.
         # HINT: ratio is the exponential of the difference between logp and old_logp.
         # HINT: You can use torch.clamp to clip values.
+        self.optimizer.zero_grad()
         
-        logp = self(obs).log_prob(actions)
-        
+        #logp = self(obs).log_prob(actions)
+        if self.discrete:
+            logp = self(obs).log_prob(actions)
+        else:
+            logp = self(obs).log_prob(actions).sum(dim=-1)
+                    
         ratio = torch.exp(logp - old_logp)
         
-        loss = (torch.min(ratio * advantages, torch.clamp(ratio, 1 - ppo_cliprange, 1 + ppo_cliprange) * advantages)).sum()
+        loss = - torch.sum(torch.min(ratio * advantages, torch.clamp(ratio, 1 - ppo_cliprange, 1 + ppo_cliprange) * advantages))
+        loss.backward()
+        self.optimizer.step()
 
         return {"PPO Loss": ptu.to_numpy(loss)}
