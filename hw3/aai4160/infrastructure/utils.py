@@ -39,12 +39,12 @@ def sample_trajectory(
         # TODO(student): use the most recent ob to decide what to do
         # HINT: set `epsilon` to 0
         # Replace the line below
-        ac = None
+        ac = policy.get_action(ob, epsilon=0)
 
         # TODO(student): take that action and get reward and next ob
         # HINT: save the return values with the correct variable names
         # Replace the line below
-        env.step(ac)
+        next_ob, rew, terminated, _ = env.step(ac)
 
         steps += 1
 

@@ -87,10 +87,10 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         epsilon = exploration_schedule.value(step)
 
         # TODO(student): Compute action from observation
-        action = ...
+        action = agent.get_action(observation, epsilon)
 
         # TODO(student): Step the environment
-        ...
+        next_observation, rew, terminated, info = env.step(action)
 
         next_observation = np.asarray(next_observation)
 
@@ -99,10 +99,10 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             # We're using the memory-efficient replay buffer,
             # so we only insert the latest frame of `next_observation`
             # please refer to L82 and `insert` function of MemoryEfficientReplayBuffer
-            ...
+            replay_buffer.insert(observation, action, rew, next_observation[-1, ...], terminated)
         else:
             # We're using the regular replay buffer
-            ...
+            replay_buffer.insert(observation, action, rew, next_observation, terminated)
 
         # Handle episode termination
         if terminated or truncated:
@@ -116,13 +116,13 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         # Main DQN training loop
         if step >= config["learning_starts"]:
             # TODO(student): Sample config["batch_size"] samples from the replay buffer
-            batch = ...
+            batch = replay_buffer.sample(config["batch_size"])
 
             # Convert to PyTorch tensors
             batch = ptu.from_numpy(batch)
 
             # TODO(student): Train the agent using `update` method. `batch` is a dictionary of torch tensors.
-            update_info = ...
+            update_info = agent.update(**batch)
 
             # Logging code
             update_info["epsilon"] = epsilon
