@@ -9,8 +9,8 @@ name_2="lr = 5e-2"
 
 # data_key="Eval_AverageReturn"
 # data_key="critic_loss"
-# data_key="q_values"
-data_key="Eval_AverageReturn"
+data_key="q_values"
+# data_key="Eval_AverageReturn"
 title="$data_key with different learning rates"
 
 
