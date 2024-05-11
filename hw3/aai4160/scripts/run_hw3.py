@@ -99,9 +99,11 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             # We're using the memory-efficient replay buffer,
             # so we only insert the latest frame of `next_observation`
             # please refer to L82 and `insert` function of MemoryEfficientReplayBuffer
+            breakpoint()
             replay_buffer.insert(observation, action, rew, next_observation[-1, ...], terminated)
         else:
             # We're using the regular replay buffer
+            breakpoint()
             replay_buffer.insert(observation, action, rew, next_observation, terminated)
 
         # Handle episode termination

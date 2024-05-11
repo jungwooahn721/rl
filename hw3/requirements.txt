@@ -5,3 +5,5 @@ tensorboardX==2.5.1
 torch
 opencv-python
 pyyaml
+pillow
+matplotlib
