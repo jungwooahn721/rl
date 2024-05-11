@@ -74,3 +74,4 @@ typing_extensions==4.11.0
 urllib3==2.2.1
 wcwidth @ file:///Users/ktietz/demo/mc3/conda-bld/wcwidth_1629357192024/work
 Werkzeug==3.0.3
+#5e-4 5e-3 e-2 순
