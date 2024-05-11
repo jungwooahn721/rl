@@ -48,10 +48,9 @@ class DQNAgent(nn.Module):
 
         # TODO(student): get the action from the critic using an epsilon-greedy strategy
         if np.random.rand() < epsilon:
-            action = np.random.randint(self.num_actions)
+            action = torch.randint(self.num_actions, (1,))
         else:
-            action_distribution = self.critic(observation)
-            action = action_distribution.sample()
+            action = torch.argmax(self.critic(observation), dim=1)
 
         return ptu.to_numpy(action).squeeze(0).item()
 
@@ -85,7 +84,7 @@ class DQNAgent(nn.Module):
             next_q_values = next_qa_values.gather(1, next_action.unsqueeze(1)).squeeze(1)
 
             # HINT: finally, compute the target values with the `next_q_values`
-            target_values = reward + self.discount * next_q_values * (1 - done)
+            target_values = reward + self.discount * (1 - done.long()) * next_q_values
 
         # TODO(student): train the critic with the target values
 

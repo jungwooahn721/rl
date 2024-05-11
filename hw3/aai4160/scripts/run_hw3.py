@@ -90,7 +90,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         action = agent.get_action(observation, epsilon)
 
         # TODO(student): Step the environment
-        next_observation, rew, terminated, info = env.step(action)
+        next_observation, rew, terminated, truncated, info = env.step(action)
 
         next_observation = np.asarray(next_observation)
 
@@ -122,7 +122,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             batch = ptu.from_numpy(batch)
 
             # TODO(student): Train the agent using `update` method. `batch` is a dictionary of torch tensors.
-            update_info = agent.update(**batch)
+            update_info = agent.update(**batch, step=step)
 
             # Logging code
             update_info["epsilon"] = epsilon

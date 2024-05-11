@@ -44,7 +44,7 @@ def sample_trajectory(
         # TODO(student): take that action and get reward and next ob
         # HINT: save the return values with the correct variable names
         # Replace the line below
-        next_ob, rew, terminated, _ = env.step(ac)
+        next_ob, rew, terminated, truncated, info = env.step(ac)
 
         steps += 1
 
