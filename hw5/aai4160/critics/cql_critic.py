@@ -84,7 +84,7 @@ class CQLCritic(BaseCritic):
         # Hint #3: Compute cql_loss using q_t_logsumexp and q_t_values (the second summation in Equation 1)
         # Hint #4: Finally, compute loss using dqn_loss and cql_loss
 
-        ### YOUR CODE START HERE ###        
+        ### YOUR CODE START HERE ###
         dqn_loss, qa_t_values, q_t_values = self.dqn_loss(ob_no, ac_na, next_ob_no, reward_n, terminal_n)
         q_t_logsumexp = torch.logsumexp(qa_t_values, dim=1)
         cql_loss = torch.mean(q_t_logsumexp - q_t_values)
