@@ -70,12 +70,22 @@ def run_training_loop(
             # TODO(student): collect at least config["initial_batch_size"] transitions with a random policy
             # HINT: Use `random_policy` and `utils.sample_trajectories`
             ### STUDENT CODE BEGIN HERE ###
-            trajs, envsteps_this_batch = ...
+            trajs, envsteps_this_batch = utils.sample_trajectories(
+                env,
+                policy=random_policy,
+                min_timesteps_per_batch=config["initial_batch_size"],
+                max_length=ep_len,
+            )
             ### STUDENT CODE END HERE ###
         else:
             # TODO(student): collect at least config["batch_size"] transitions with our `actor_agent`
             ### STUDENT CODE BEGIN HERE ###
-            trajs, envsteps_this_batch = ...
+            trajs, envsteps_this_batch = utils.sample_trajectories(
+                env,
+                policy=actor_agent,
+                min_timesteps_per_batch=config["batch_size"],
+                max_length=ep_len,
+            )
             ### STUDENT CODE END HERE ###
 
         total_envsteps += envsteps_this_batch
@@ -109,8 +119,51 @@ def run_training_loop(
             # HINT: train each dynamics model in the ensemble with a *different* batch of transitions using mb_agent.update()
             # You may use for loop with size of `mb_agent.ensemble_size`
             # Use `replay_buffer.sample` with config["train_batch_size"].
+            
+            '''
+                def update(self, i: int, obs: np.ndarray, acs: np.ndarray, next_obs: np.ndarray):
+                    """
+                    Update self.dynamics_models[i] using the given batch of data.
+
+                    Args:
+                        i: index of the dynamics model to update
+                        obs: (batch_size, ob_dim)
+                        acs: (batch_size, ac_dim)
+                        next_obs: (batch_size, ob_dim)
+                    """
+                    obs = ptu.from_numpy(obs)
+                    acs = ptu.from_numpy(acs)
+                    next_obs = ptu.from_numpy(next_obs)
+
+                    obs_acs = torch.concatenate([obs, acs], axis = -1)
+                    obs_acs_normalized = (obs_acs - self.obs_acs_mean) / self.obs_acs_std
+
+                    obs_delta = next_obs - obs
+                    obs_delta_normalized = (obs_delta - self.obs_delta_mean) / self.obs_delta_std
+
+                    # TODO(student): update self.dynamics_models[i] using the given batch of data
+                    # HINT: use self.dynamics_models[i] to get the normalized delta prediction for next observation.
+                    # Note that the model recieves normalized observation-action for its input.
+                    # Optimize the model with squared loss.
+                    ### STUDENT CODE BEGIN HERE ###
+                    obs_delta_normalized_hat = self.dynamics_models[i](obs_acs_normalized)
+                    loss = self.loss_fn(obs_delta_normalized_hat, obs_delta_normalized)
+                
+                    ### STUDENT CODE END HERE ###
+
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    self.optimizer.step()
+
+                    return ptu.to_numpy(loss)
+            '''
             ### STUDENT CODE BEGIN HERE ###
-            step_losses = ...
+            # step_losses = mb_agent.update(
+            #     replay_buffer.sample(config["train_batch_size"])
+            # ) -> ModelBasedAgent.update() missing 3 required positional arguments: 'obs', 'acs', and 'next_obs'   
+            sample = replay_buffer.sample(config["train_batch_size"])
+            # step_losses = mb_agent.update(sample['observations'], sample['actions'], sample['next_observations'])
+            step_losses = [mb_agent.update(i, sample['observations'], sample['actions'], sample['next_observations']) for i in range(mb_agent.ensemble_size)]
             ### STUDENT CODE END HERE ###
 
             all_losses.append(np.mean(step_losses))
@@ -143,8 +196,8 @@ def run_training_loop(
 
         logger.log_scalar(np.mean(returns), "eval_return", itr)
         logger.log_scalar(np.mean(ep_lens), "eval_ep_len", itr)
-        print(f"Average eval return: {np.mean(returns)}")
-        print(f"Average eval return: {np.std(returns)}")
+        print(f"Average eval return (mean): {np.mean(returns)}")
+        print(f"Average eval return (std) : {np.std(returns)}")
 
         if len(returns) > 1:
             logger.log_scalar(np.std(returns), "eval/return_std", itr)
